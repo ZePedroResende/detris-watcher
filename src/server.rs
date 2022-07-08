@@ -1,4 +1,5 @@
 use ::prometheus::{opts, register_counter, register_histogram, Counter, Histogram};
+use ethereum::auth::provider;
 use eyre::{bail, ensure, Result as EyreResult, WrapErr as _};
 use hyper::{
     service::{make_service_fn, service_fn},
@@ -21,6 +22,7 @@ pub struct Options {
 
 static REQUESTS: Lazy<Counter> =
     Lazy::new(|| register_counter!(opts!("api_requests", "Number of requests received.")).unwrap());
+
 static STATUS: Lazy<IntCounterVec> = Lazy::new(|| {
     register_int_counter_vec!(
         "api_response_status",
@@ -29,6 +31,7 @@ static STATUS: Lazy<IntCounterVec> = Lazy::new(|| {
     )
     .unwrap()
 });
+
 static LATENCY: Lazy<Histogram> = Lazy::new(|| {
     register_histogram!("api_latency_seconds", "The API latency in seconds.").unwrap()
 });

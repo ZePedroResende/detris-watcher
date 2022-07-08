@@ -1,6 +1,7 @@
 #![doc = include_str!("../Readme.md")]
 #![warn(clippy::all, clippy::pedantic, clippy::cargo, clippy::nursery)]
 
+mod ethereum;
 mod server;
 mod utils;
 
@@ -48,8 +49,8 @@ pub mod test {
     #[test]
     #[allow(clippy::eq_op)]
     fn test_with_proptest() {
-        proptest!(|(a in 0..5, b in 0..5)| {
-            assert_eq!(a + b, b + a);
+        proptest!(|(a in 0..5i32, b in 0..5i32)| {
+            assert_eq!(a + b , b + a );
         });
     }
 
