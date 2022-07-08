@@ -5,11 +5,17 @@ use ethers::abi::AbiDecode;
 use ethers::prelude::*;
 use ethers::providers::{Provider, Ws};
 use ethers::utils::keccak256;
+use ethers::providers::Authorization::Basic;
 use std::sync::Arc;
 
 async fn provider() -> Result<Provider<Ws>> {
-    let provider: Provider<Ws> =
-        Provider::<Ws>::connect_with_auth("https://bob.finiam.com").await?;
+    let username = std::env::var("PROVIDER_USERNAME")?;
+    let password = std::env::var("PROVIDER_PASSWORD")?;
+
+
+    
+    let provider: Provider<Ws> = 
+        Provider::<Ws>::connect_with_auth("https://bob.finiam.com", Basic::new_client(username, password)).await?;
     let provider = Arc::new(provider);
 
     Ok(provider)
