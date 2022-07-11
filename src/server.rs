@@ -1,5 +1,6 @@
+use crate::ethereum::auth::provider;
+
 use ::prometheus::{opts, register_counter, register_histogram, Counter, Histogram};
-use ethereum::auth::provider;
 use eyre::{bail, ensure, Result as EyreResult, WrapErr as _};
 use hyper::{
     service::{make_service_fn, service_fn},
@@ -17,7 +18,13 @@ use url::{Host, Url};
 pub struct Options {
     /// API Server url
     #[structopt(long, env = "SERVER", default_value = "http://127.0.0.1:8080/")]
-    pub server: Url,
+    pub server:            Url,
+    #[structopt(long, env = "PROVIDER_URL", default_value = "wss://bob.finiam.com")]
+    pub provider_url:      String,
+    #[structopt(long, env = "PROVIDER_USERNAME")]
+    pub provider_username: String,
+    #[structopt(long, env = "PROVIDER_PASSWORD")]
+    pub provider_password: String,
 }
 
 static REQUESTS: Lazy<Counter> =
@@ -50,7 +57,7 @@ async fn route(request: Request<Body>) -> Result<Response<Body>, hyper::Error> {
 
     // Route requests
     let response = match (request.method(), request.uri().path()) {
-        (&Method::GET, "/") => hello_world(request).await?,
+        (&Method::GET, "/") => healt(request).await?,
         _ => Response::builder()
             .status(404)
             .body(Body::from("404"))
@@ -70,19 +77,33 @@ pub async fn main(options: Options, shutdown: broadcast::Sender<()>) -> EyreResu
         "Only http:// is supported in {}",
         options.server
     );
+
     ensure!(
         options.server.path() == "/",
         "Only / is supported in {}",
         options.server
     );
+
     let ip: IpAddr = match options.server.host() {
         Some(Host::Ipv4(ip)) => ip.into(),
         Some(Host::Ipv6(ip)) => ip.into(),
         Some(_) => bail!("Cannot bind {}", options.server),
         None => Ipv4Addr::LOCALHOST.into(),
     };
+
     let port = options.server.port().unwrap_or(9998);
     let addr = SocketAddr::new(ip, port);
+
+    let provider = match provider(
+        options.provider_url,
+        options.provider_username,
+        options.provider_password,
+    )
+    .await
+    {
+        Ok(provider) => provider,
+        Err(m) => bail!("Couldn't create provider: {}", m),
+    };
 
     let server = Server::try_bind(&addr)
         .wrap_err("Could not bind server port")?
@@ -92,9 +113,11 @@ pub async fn main(options: Options, shutdown: broadcast::Sender<()>) -> EyreResu
         .with_graceful_shutdown(async move {
             shutdown.subscribe().recv().await.ok();
         });
+
     info!(url = %options.server, "Server listening");
 
     server.await?;
+
     Ok(())
 }
 
