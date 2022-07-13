@@ -1,4 +1,5 @@
-use crate::ethereum::auth::provider;
+use crate::ethereum::auth::Config;
+use crate::slack::send_mint_notification;
 
 use ::prometheus::{opts, register_counter, register_histogram, Counter, Histogram};
 use eyre::{bail, ensure, Result as EyreResult, WrapErr as _};
@@ -14,17 +15,21 @@ use tokio::sync::broadcast;
 use tracing::{info, trace};
 use url::{Host, Url};
 
+use crate::utils::spawn_or_abort;
+
 #[derive(Debug, PartialEq, StructOpt)]
 pub struct Options {
     /// API Server url
     #[structopt(long, env = "SERVER", default_value = "http://127.0.0.1:8080/")]
-    pub server:            Url,
+    pub server: Url,
     #[structopt(long, env = "PROVIDER_URL", default_value = "wss://bob.finiam.com")]
-    pub provider_url:      String,
+    pub provider_url: String,
     #[structopt(long, env = "PROVIDER_USERNAME")]
     pub provider_username: String,
     #[structopt(long, env = "PROVIDER_PASSWORD")]
     pub provider_password: String,
+    #[structopt(long, env = "SLACK_TOKEN")]
+    pub slack_token: String,
 }
 
 static REQUESTS: Lazy<Counter> =
@@ -44,8 +49,8 @@ static LATENCY: Lazy<Histogram> = Lazy::new(|| {
 });
 
 #[allow(clippy::unused_async)]
-async fn hello_world(_req: Request<Body>) -> Result<Response<Body>, hyper::Error> {
-    Ok(Response::new("Hello, World!\n".into()))
+async fn health(_req: Request<Body>) -> Result<Response<Body>, hyper::Error> {
+    Ok(Response::new("Still alive!\n".into()))
 }
 
 #[allow(clippy::unused_async)] // We are implementing an interface
@@ -57,7 +62,7 @@ async fn route(request: Request<Body>) -> Result<Response<Body>, hyper::Error> {
 
     // Route requests
     let response = match (request.method(), request.uri().path()) {
-        (&Method::GET, "/") => healt(request).await?,
+        (&Method::GET, "/") => health(request).await?,
         _ => Response::builder()
             .status(404)
             .body(Body::from("404"))
@@ -71,7 +76,8 @@ async fn route(request: Request<Body>) -> Result<Response<Body>, hyper::Error> {
     Ok(response)
 }
 
-pub async fn main(options: Options, shutdown: broadcast::Sender<()>) -> EyreResult<()> {
+pub async fn start(options: Options, shutdown: broadcast::Sender<()>) -> EyreResult<()> {
+    trace!("{:?}", options);
     ensure!(
         options.server.scheme() == "http",
         "Only http:// is supported in {}",
@@ -94,16 +100,14 @@ pub async fn main(options: Options, shutdown: broadcast::Sender<()>) -> EyreResu
     let port = options.server.port().unwrap_or(9998);
     let addr = SocketAddr::new(ip, port);
 
-    let provider = match provider(
-        options.provider_url,
-        options.provider_username,
-        options.provider_password,
-    )
-    .await
-    {
-        Ok(provider) => provider,
-        Err(m) => bail!("Couldn't create provider: {}", m),
+    let provider_config = Config {
+        url: options.provider_url,
+        username: options.provider_username,
+        password: options.provider_password,
     };
+
+    info!("Starting provider");
+    spawn_or_abort(send_mint_notification(provider_config, options.slack_token));
 
     let server = Server::try_bind(&addr)
         .wrap_err("Could not bind server port")?
@@ -115,7 +119,6 @@ pub async fn main(options: Options, shutdown: broadcast::Sender<()>) -> EyreResu
         });
 
     info!(url = %options.server, "Server listening");
-
     server.await?;
 
     Ok(())
@@ -129,11 +132,11 @@ mod test {
     use pretty_assertions::assert_eq;
 
     #[tokio::test]
-    async fn test_hello_world() {
+    async fn test_health() {
         let request = Request::new(Body::empty());
-        let response = hello_world(request).await.unwrap();
+        let response = health(request).await.unwrap();
         let bytes = to_bytes(response.into_body()).await.unwrap();
-        assert_eq!(bytes.as_ref(), b"Hello, World!\n");
+        assert_eq!(bytes.as_ref(), b"Still alive!\n");
     }
 }
 

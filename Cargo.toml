@@ -20,7 +20,7 @@ tokio-console = [ "console-subscriber" ]
 
 [[bin]]
 name = "rust-app"
-path = "src/cli/main.rs"
+path = "src/main.rs"
 
 [[bench]]
 name = "criterion"
@@ -29,7 +29,6 @@ path = "criterion.rs"
 required-features = [ "bench", "proptest" ]
 
 [dependencies]
-anyhow = "1.0"
 color-eyre = "0.6"
 console-subscriber = { version = "0.1", optional = true }
 criterion = { version = "0.3.6", optional = true, features = [ "async_tokio" ] }
@@ -53,7 +52,9 @@ tracing-futures = "0.2"
 tracing-subscriber = { version = "0.3", features = [ "env-filter", "json" ] }
 url = "2.2"
 users = "0.11"
-
+slack-morphism = "0.40.0"
+slack-morphism-models = "0.40.0"
+slack-morphism-hyper="0.40"
 
 [dev-dependencies]
 pretty_assertions = "1.2.1"

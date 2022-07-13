@@ -10,7 +10,7 @@ use tracing_subscriber::{filter::Targets, fmt, layer::SubscriberExt, Layer, Regi
 use users::{get_current_gid, get_current_uid};
 
 #[derive(Debug, PartialEq)]
-enum LogFormat {
+pub enum LogFormat {
     Compact,
     Pretty,
     Json,
@@ -58,7 +58,7 @@ pub struct Options {
     log_format: LogFormat,
 
     #[structopt(flatten)]
-    pub tokio_console: tokio_console::Options,
+    tokio_console: tokio_console::Options,
 }
 
 impl Options {
@@ -75,7 +75,6 @@ impl Options {
             };
             Targets::new()
                 .with_default(all)
-                .with_target("lib", app)
                 .with_target(env!("CARGO_CRATE_NAME"), app)
         };
         let log_filter = if self.log_filter.is_empty() {
@@ -123,13 +122,16 @@ pub mod test {
     fn test_parse_args() {
         let cmd = "arg0 -v --log-filter foo -vvv";
         let options = Options::from_iter_safe(cmd.split(' ')).unwrap();
-        assert_eq!(options, Options {
-            verbose:       4,
-            log_filter:    "foo".to_owned(),
-            log_format:    LogFormat::Pretty,
-            tokio_console: tokio_console::Options {
-                tokio_console: false,
-            },
-        });
+        assert_eq!(
+            options,
+            Options {
+                verbose: 4,
+                log_filter: "foo".to_owned(),
+                log_format: LogFormat::Pretty,
+                tokio_console: tokio_console::Options {
+                    tokio_console: false,
+                },
+            }
+        );
     }
 }
