@@ -15,8 +15,10 @@ use url::{Host, Url};
 #[derive(Debug, PartialEq, Eq, StructOpt)]
 pub struct Options {
     /// API Server url
-    #[structopt(long, env = "SERVER", default_value = "http://127.0.0.1:8080/")]
-    pub server: Url,
+    #[structopt(long, env = "HOST", default_value = "127.0.0.1")]
+    pub host: Url,
+    #[structopt(long, env = "PORT", default_value = "8080")]
+    pub port: u16,
 }
 
 static REQUESTS: Lazy<Counter> =
@@ -65,26 +67,15 @@ async fn route(request: Request<Body>) -> Result<Response<Body>, hyper::Error> {
 
 pub async fn start(options: Options, shutdown: broadcast::Sender<()>) -> EyreResult<()> {
     trace!("{:?}", options);
-    ensure!(
-        options.server.scheme() == "http",
-        "Only http:// is supported in {}",
-        options.server
-    );
 
-    ensure!(
-        options.server.path() == "/",
-        "Only / is supported in {}",
-        options.server
-    );
-
-    let ip: IpAddr = match options.server.host() {
+    let ip: IpAddr = match options.host.host() {
         Some(Host::Ipv4(ip)) => ip.into(),
         Some(Host::Ipv6(ip)) => ip.into(),
-        Some(_) => bail!("Cannot bind {}", options.server),
+        Some(_) => bail!("Cannot bind {}", options.host),
         None => Ipv4Addr::LOCALHOST.into(),
     };
 
-    let port = options.server.port().unwrap_or(9998);
+    let port = options.port;
     let addr = SocketAddr::new(ip, port);
 
     let server = Server::try_bind(&addr)
@@ -96,7 +87,7 @@ pub async fn start(options: Options, shutdown: broadcast::Sender<()>) -> EyreRes
             shutdown.subscribe().recv().await.ok();
         });
 
-    info!(url = %options.server, "Server listening");
+    info!(url = %addr, "Server listening");
     server.await?;
 
     Ok(())
