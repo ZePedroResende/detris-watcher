@@ -1,14 +1,21 @@
-#![warn(clippy::all, clippy::pedantic, clippy::cargo, clippy::nursery)]
+#![warn(
+    clippy::all,
+    clippy::pedantic,
+    clippy::cargo,
+    clippy::nursery,
+    unused_extern_crates
+)]
 
-use rust_service_template as lib;
+mod cli;
+mod ethereum;
+mod server;
+mod slack;
+mod utils;
 
-mod allocator;
-mod logging;
-mod prometheus;
-mod shutdown;
-mod tokio_console;
-
-use self::allocator::Allocator;
+use crate::{
+    cli::{allocator, logging, prometheus, shutdown},
+    utils::spawn_or_abort,
+};
 use eyre::{Result as EyreResult, WrapErr as _};
 use structopt::StructOpt;
 use tokio::{runtime, sync::broadcast};
@@ -34,7 +41,7 @@ const VERSION: &str = concat!(
 
 #[cfg(not(feature = "mimalloc"))]
 #[global_allocator]
-pub static ALLOCATOR: Allocator<allocator::StdAlloc> = allocator::new_std();
+pub static ALLOCATOR: allocator::Allocator<allocator::StdAlloc> = allocator::new_std();
 
 #[cfg(feature = "mimalloc")]
 #[global_allocator]
@@ -47,7 +54,9 @@ struct Options {
     #[structopt(flatten)]
     pub prometheus: prometheus::Options,
     #[structopt(flatten)]
-    app:            lib::Options,
+    server:         server::Options,
+    #[structopt(flatten)]
+    ethereum:       ethereum::Options,
 }
 
 fn main() -> EyreResult<()> {
@@ -84,8 +93,16 @@ fn main() -> EyreResult<()> {
             // Start prometheus
             let prometheus = tokio::spawn(prometheus::main(options.prometheus, shutdown.clone()));
 
+            // Start slack notifier
+            spawn_or_abort(ethereum::main(options.ethereum));
+
             // Start main
-            lib::main(options.app, shutdown.clone()).await?;
+            let server = spawn_or_abort({
+                let shutdown = shutdown.clone();
+                async move { server::start(options.server, shutdown).await }
+            });
+
+            server.await?;
 
             // Send (potentially redundant) shutdown in case `lib::main` returned by itself
             let _ = shutdown.send(());

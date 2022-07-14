@@ -16,5 +16,8 @@
         "structopt",
         "subcommand",
         "thiserror"
+    ],
+    "ignoreWords": [
+        "morphism"
     ]
 }

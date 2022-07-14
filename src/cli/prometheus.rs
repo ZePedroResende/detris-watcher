@@ -16,7 +16,7 @@ use tokio::sync::broadcast;
 use tracing::{error, info, trace};
 use url::{Host, Url};
 
-#[derive(Debug, PartialEq, StructOpt)]
+#[derive(Debug, PartialEq, Eq, StructOpt)]
 pub struct Options {
     /// Prometheus scrape endpoint
     // See <https://github.com/prometheus/prometheus/wiki/Default-port-allocations>

@@ -9,8 +9,8 @@ use tracing::{info, Level, Subscriber};
 use tracing_subscriber::{filter::Targets, fmt, layer::SubscriberExt, Layer, Registry};
 use users::{get_current_gid, get_current_uid};
 
-#[derive(Debug, PartialEq)]
-enum LogFormat {
+#[derive(Debug, PartialEq, Eq)]
+pub enum LogFormat {
     Compact,
     Pretty,
     Json,
@@ -22,10 +22,10 @@ impl LogFormat {
         S: Subscriber + for<'a> tracing_subscriber::registry::LookupSpan<'a> + Send + Sync,
     {
         match self {
-            LogFormat::Compact => Box::new(fmt::Layer::new().event_format(fmt::format().compact()))
+            Self::Compact => Box::new(fmt::Layer::new().event_format(fmt::format().compact()))
                 as Box<dyn Layer<S> + Send + Sync>,
-            LogFormat::Pretty => Box::new(fmt::Layer::new().event_format(fmt::format().pretty())),
-            LogFormat::Json => Box::new(fmt::Layer::new().event_format(fmt::format().json())),
+            Self::Pretty => Box::new(fmt::Layer::new().event_format(fmt::format().pretty())),
+            Self::Json => Box::new(fmt::Layer::new().event_format(fmt::format().json())),
         }
     }
 }
@@ -43,7 +43,7 @@ impl FromStr for LogFormat {
     }
 }
 
-#[derive(Debug, PartialEq, StructOpt)]
+#[derive(Debug, PartialEq, Eq, StructOpt)]
 pub struct Options {
     /// Verbose mode (-v, -vv, -vvv, etc.)
     #[structopt(short, long, parse(from_occurrences))]
@@ -58,7 +58,7 @@ pub struct Options {
     log_format: LogFormat,
 
     #[structopt(flatten)]
-    pub tokio_console: tokio_console::Options,
+    tokio_console: tokio_console::Options,
 }
 
 impl Options {
@@ -75,7 +75,6 @@ impl Options {
             };
             Targets::new()
                 .with_default(all)
-                .with_target("lib", app)
                 .with_target(env!("CARGO_CRATE_NAME"), app)
         };
         let log_filter = if self.log_filter.is_empty() {

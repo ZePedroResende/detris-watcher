@@ -12,7 +12,7 @@ use tokio::sync::broadcast;
 use tracing::{info, trace};
 use url::{Host, Url};
 
-#[derive(Debug, PartialEq, StructOpt)]
+#[derive(Debug, PartialEq, Eq, StructOpt)]
 pub struct Options {
     /// API Server url
     #[structopt(long, env = "SERVER", default_value = "http://127.0.0.1:8080/")]
@@ -21,6 +21,7 @@ pub struct Options {
 
 static REQUESTS: Lazy<Counter> =
     Lazy::new(|| register_counter!(opts!("api_requests", "Number of requests received.")).unwrap());
+
 static STATUS: Lazy<IntCounterVec> = Lazy::new(|| {
     register_int_counter_vec!(
         "api_response_status",
@@ -29,13 +30,14 @@ static STATUS: Lazy<IntCounterVec> = Lazy::new(|| {
     )
     .unwrap()
 });
+
 static LATENCY: Lazy<Histogram> = Lazy::new(|| {
     register_histogram!("api_latency_seconds", "The API latency in seconds.").unwrap()
 });
 
 #[allow(clippy::unused_async)]
-async fn hello_world(_req: Request<Body>) -> Result<Response<Body>, hyper::Error> {
-    Ok(Response::new("Hello, World!\n".into()))
+async fn health(_req: Request<Body>) -> Result<Response<Body>, hyper::Error> {
+    Ok(Response::new("Still alive!\n".into()))
 }
 
 #[allow(clippy::unused_async)] // We are implementing an interface
@@ -47,7 +49,7 @@ async fn route(request: Request<Body>) -> Result<Response<Body>, hyper::Error> {
 
     // Route requests
     let response = match (request.method(), request.uri().path()) {
-        (&Method::GET, "/") => hello_world(request).await?,
+        (&Method::GET, "/") => health(request).await?,
         _ => Response::builder()
             .status(404)
             .body(Body::from("404"))
@@ -61,23 +63,27 @@ async fn route(request: Request<Body>) -> Result<Response<Body>, hyper::Error> {
     Ok(response)
 }
 
-pub async fn main(options: Options, shutdown: broadcast::Sender<()>) -> EyreResult<()> {
+pub async fn start(options: Options, shutdown: broadcast::Sender<()>) -> EyreResult<()> {
+    trace!("{:?}", options);
     ensure!(
         options.server.scheme() == "http",
         "Only http:// is supported in {}",
         options.server
     );
+
     ensure!(
         options.server.path() == "/",
         "Only / is supported in {}",
         options.server
     );
+
     let ip: IpAddr = match options.server.host() {
         Some(Host::Ipv4(ip)) => ip.into(),
         Some(Host::Ipv6(ip)) => ip.into(),
         Some(_) => bail!("Cannot bind {}", options.server),
         None => Ipv4Addr::LOCALHOST.into(),
     };
+
     let port = options.server.port().unwrap_or(9998);
     let addr = SocketAddr::new(ip, port);
 
@@ -89,9 +95,10 @@ pub async fn main(options: Options, shutdown: broadcast::Sender<()>) -> EyreResu
         .with_graceful_shutdown(async move {
             shutdown.subscribe().recv().await.ok();
         });
-    info!(url = %options.server, "Server listening");
 
+    info!(url = %options.server, "Server listening");
     server.await?;
+
     Ok(())
 }
 
@@ -103,11 +110,11 @@ mod test {
     use pretty_assertions::assert_eq;
 
     #[tokio::test]
-    async fn test_hello_world() {
+    async fn test_health() {
         let request = Request::new(Body::empty());
-        let response = hello_world(request).await.unwrap();
+        let response = health(request).await.unwrap();
         let bytes = to_bytes(response.into_body()).await.unwrap();
-        assert_eq!(bytes.as_ref(), b"Hello, World!\n");
+        assert_eq!(bytes.as_ref(), b"Still alive!\n");
     }
 }
 
