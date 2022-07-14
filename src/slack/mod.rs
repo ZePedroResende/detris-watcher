@@ -1,26 +1,26 @@
 mod message;
 
-use crate::ethereum;
-use crate::ethereum::auth::provider;
-use crate::ethereum::block::mint_stream;
-use ethers::abi::AbiDecode;
-use ethers::prelude::*;
+use crate::{
+    ethereum,
+    ethereum::{auth::provider, block::mint_stream},
+};
+use ethers::{abi::AbiDecode, prelude::*};
 use eyre::Result as EyreResult;
 use tracing::info;
 
 use message::MintMessageTemplateParams;
 use slack_morphism::prelude::*;
-use slack_morphism_hyper::*;
+use slack_morphism_hyper::SlackClientHyperConnector;
 use structopt::StructOpt;
 
-#[derive(Debug, PartialEq, StructOpt)]
+#[derive(Debug, PartialEq, Eq, StructOpt)]
 pub struct Options {
     #[structopt(long, env = "SLACK_CHANNEL")]
     pub slack_channel: String,
     #[structopt(long, env = "SLACK_TOKEN")]
-    pub slack_token: String,
+    pub slack_token:   String,
     #[structopt(flatten)]
-    provider: ethereum::auth::Options,
+    provider:          ethereum::auth::Options,
 }
 
 pub async fn main(options: Options) -> EyreResult<()> {
@@ -42,10 +42,10 @@ pub async fn main(options: Options) -> EyreResult<()> {
 
     info!("Starting to stream mint events !");
 
-    //stream mints and send slack message
+    // stream mints and send slack message
     while let Some(log) = stream.next().await {
         info!("block: id: {:?}", log.block_number);
-        let id: String = U256::decode(log.topics[3])?.to_string().to_owned();
+        let id: String = U256::decode(log.topics[3])?.to_string().clone();
         let minter = log.topics[2].to_string();
 
         info!(channel=%options.slack_channel,"Id : {} minted by : {}", id, minter);

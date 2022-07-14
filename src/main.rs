@@ -6,11 +6,10 @@ mod server;
 mod slack;
 mod utils;
 
-use crate::cli::allocator::{new_std, Allocator, StdAlloc};
-use crate::cli::logging;
-use crate::cli::prometheus;
-use crate::cli::shutdown;
-use crate::utils::spawn_or_abort;
+use crate::{
+    cli::{allocator, logging, prometheus, shutdown},
+    utils::spawn_or_abort,
+};
 use eyre::{Result as EyreResult, WrapErr as _};
 use structopt::StructOpt;
 use tokio::{runtime, sync::broadcast};
@@ -36,7 +35,7 @@ const VERSION: &str = concat!(
 
 #[cfg(not(feature = "mimalloc"))]
 #[global_allocator]
-pub static ALLOCATOR: Allocator<StdAlloc> = new_std();
+pub static ALLOCATOR: allocator::Allocator<allocator::StdAlloc> = allocator::new_std();
 
 #[cfg(feature = "mimalloc")]
 #[global_allocator]
@@ -45,13 +44,13 @@ pub static ALLOCATOR: Allocator<allocator::MiMalloc> = allocator::new_mimalloc()
 #[derive(StructOpt)]
 struct Options {
     #[structopt(flatten)]
-    log: logging::Options,
+    log:            logging::Options,
     #[structopt(flatten)]
     pub prometheus: prometheus::Options,
     #[structopt(flatten)]
-    server: server::Options,
+    server:         server::Options,
     #[structopt(flatten)]
-    slack: slack::Options,
+    slack:          slack::Options,
 }
 
 fn main() -> EyreResult<()> {

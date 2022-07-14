@@ -9,7 +9,7 @@ use tracing::{info, Level, Subscriber};
 use tracing_subscriber::{filter::Targets, fmt, layer::SubscriberExt, Layer, Registry};
 use users::{get_current_gid, get_current_uid};
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum LogFormat {
     Compact,
     Pretty,
@@ -22,10 +22,10 @@ impl LogFormat {
         S: Subscriber + for<'a> tracing_subscriber::registry::LookupSpan<'a> + Send + Sync,
     {
         match self {
-            LogFormat::Compact => Box::new(fmt::Layer::new().event_format(fmt::format().compact()))
+            Self::Compact => Box::new(fmt::Layer::new().event_format(fmt::format().compact()))
                 as Box<dyn Layer<S> + Send + Sync>,
-            LogFormat::Pretty => Box::new(fmt::Layer::new().event_format(fmt::format().pretty())),
-            LogFormat::Json => Box::new(fmt::Layer::new().event_format(fmt::format().json())),
+            Self::Pretty => Box::new(fmt::Layer::new().event_format(fmt::format().pretty())),
+            Self::Json => Box::new(fmt::Layer::new().event_format(fmt::format().json())),
         }
     }
 }
@@ -43,7 +43,7 @@ impl FromStr for LogFormat {
     }
 }
 
-#[derive(Debug, PartialEq, StructOpt)]
+#[derive(Debug, PartialEq, Eq, StructOpt)]
 pub struct Options {
     /// Verbose mode (-v, -vv, -vvv, etc.)
     #[structopt(short, long, parse(from_occurrences))]
@@ -122,16 +122,13 @@ pub mod test {
     fn test_parse_args() {
         let cmd = "arg0 -v --log-filter foo -vvv";
         let options = Options::from_iter_safe(cmd.split(' ')).unwrap();
-        assert_eq!(
-            options,
-            Options {
-                verbose: 4,
-                log_filter: "foo".to_owned(),
-                log_format: LogFormat::Pretty,
-                tokio_console: tokio_console::Options {
-                    tokio_console: false,
-                },
-            }
-        );
+        assert_eq!(options, Options {
+            verbose:       4,
+            log_filter:    "foo".to_owned(),
+            log_format:    LogFormat::Pretty,
+            tokio_console: tokio_console::Options {
+                tokio_console: false,
+            },
+        });
     }
 }

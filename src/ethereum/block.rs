@@ -1,17 +1,19 @@
-use ethers::prelude::*;
-use ethers::providers::{Provider, Ws};
-use ethers::utils::keccak256;
+use ethers::{
+    prelude::*,
+    providers::{Provider, Ws},
+    utils::keccak256,
+};
 use eyre::Result;
 use std::sync::Arc;
 use tracing::info;
 
-const DETRIS_CONTRACT: &'static str = "0xbdc105c068715d57860702da9fa0c5ead11fba51";
-const DETRIS_BLOCK: u64 = 14896795;
-const DETRIS_MINT_EVENT: &'static str = "Transfer(address,address,uint256)";
+const DETRIS_CONTRACT: &str = "0xbdc105c068715d57860702da9fa0c5ead11fba51";
+const DETRIS_BLOCK: u64 = 14_896_795;
+const DETRIS_MINT_EVENT: &str = "Transfer(address,address,uint256)";
 
-pub async fn mint_stream<'a>(
-    provider: &'a Arc<Provider<Ws>>,
-) -> Result<SubscriptionStream<'a, Ws, ethers::prelude::Log>> {
+pub async fn mint_stream(
+    provider: &Arc<Provider<Ws>>,
+) -> Result<SubscriptionStream<Ws, ethers::prelude::Log>> {
     let block = if true {
         provider.get_block_number().await?
     } else {

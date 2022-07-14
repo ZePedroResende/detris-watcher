@@ -8,7 +8,7 @@ use console_subscriber::ConsoleLayer;
 #[cfg(not(feature = "tokio-console"))]
 use tracing_subscriber::layer::Identity;
 
-#[derive(Clone, Debug, PartialEq, StructOpt)]
+#[derive(Clone, Debug, PartialEq, Eq, StructOpt)]
 pub struct Options {
     /// Start a tokio-console server on `http://127.0.0.1:6669/`.
     #[structopt(long)]

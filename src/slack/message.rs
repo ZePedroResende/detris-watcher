@@ -2,7 +2,7 @@ use slack_morphism::prelude::*;
 
 #[derive(Debug, Clone)]
 pub struct MintMessageTemplateParams {
-    pub id: String,
+    pub id:     String,
     pub minter: String,
 }
 

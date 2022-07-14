@@ -12,7 +12,7 @@ use tokio::sync::broadcast;
 use tracing::{info, trace};
 use url::{Host, Url};
 
-#[derive(Debug, PartialEq, StructOpt)]
+#[derive(Debug, PartialEq, Eq, StructOpt)]
 pub struct Options {
     /// API Server url
     #[structopt(long, env = "SERVER", default_value = "http://127.0.0.1:8080/")]

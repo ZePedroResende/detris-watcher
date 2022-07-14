@@ -5,10 +5,10 @@ use std::sync::Arc;
 use structopt::StructOpt;
 use tracing::info;
 
-#[derive(Debug, PartialEq, StructOpt)]
+#[derive(Debug, PartialEq, Eq, StructOpt)]
 pub struct Options {
     #[structopt(long, env = "PROVIDER_URL", default_value = "wss://bob.finiam.com")]
-    pub provider_url: String,
+    pub provider_url:      String,
     #[structopt(long, env = "PROVIDER_USERNAME")]
     pub provider_username: String,
     #[structopt(long, env = "PROVIDER_PASSWORD")]
