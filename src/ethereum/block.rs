@@ -17,6 +17,7 @@ pub async fn mint_stream<'a>(
     } else {
         U64::from(DETRIS_BLOCK)
     };
+
     info!("Starting on block {}", block);
 
     let last_block = provider

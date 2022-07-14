@@ -1,6 +1,7 @@
 mod message;
 
-use crate::ethereum::auth::{provider, Config};
+use crate::ethereum;
+use crate::ethereum::auth::provider;
 use crate::ethereum::block::mint_stream;
 use ethers::abi::AbiDecode;
 use ethers::prelude::*;
@@ -8,13 +9,24 @@ use eyre::Result as EyreResult;
 use tracing::info;
 
 use message::MintMessageTemplateParams;
-
 use slack_morphism::prelude::*;
 use slack_morphism_hyper::*;
+use structopt::StructOpt;
 
-pub async fn send_mint_notification(config: Config, slack_token: String) -> EyreResult<()> {
+#[derive(Debug, PartialEq, StructOpt)]
+pub struct Options {
+    #[structopt(long, env = "SLACK_CHANNEL")]
+    pub slack_channel: String,
+    #[structopt(long, env = "SLACK_TOKEN")]
+    pub slack_token: String,
+    #[structopt(flatten)]
+    provider: ethereum::auth::Options,
+}
+
+pub async fn main(options: Options) -> EyreResult<()> {
     // ethereum provider
-    let provider = provider(config).await?;
+    info!("Starting provider");
+    let provider = provider(options.provider).await?;
     let mut stream = mint_stream(&provider).await?;
 
     info!("Creating slack client");
@@ -22,7 +34,7 @@ pub async fn send_mint_notification(config: Config, slack_token: String) -> Eyre
     let client = SlackClient::new(SlackClientHyperConnector::new());
 
     info!("Creating slack api token");
-    let token: SlackApiToken = SlackApiToken::new(slack_token.into());
+    let token: SlackApiToken = SlackApiToken::new(options.slack_token.into());
 
     info!("Opening slack session");
     // Sessions are lightweight and basically just a reference to client and token
@@ -36,12 +48,14 @@ pub async fn send_mint_notification(config: Config, slack_token: String) -> Eyre
         let id: String = U256::decode(log.topics[3])?.to_string().to_owned();
         let minter = log.topics[2].to_string();
 
-        info!("Id : {} minted by : {}", id, minter);
+        info!(channel=%options.slack_channel,"Id : {} minted by : {}", id, minter);
 
         let message = MintMessageTemplateParams { id, minter };
 
-        let post_chat_req =
-            SlackApiChatPostMessageRequest::new("#tarot".into(), message.render_template());
+        let post_chat_req = SlackApiChatPostMessageRequest::new(
+            options.slack_channel.as_str().into(),
+            message.render_template(),
+        );
 
         session.chat_post_message(&post_chat_req).await?;
     }

@@ -50,6 +50,8 @@ struct Options {
     pub prometheus: prometheus::Options,
     #[structopt(flatten)]
     server: server::Options,
+    #[structopt(flatten)]
+    slack: slack::Options,
 }
 
 fn main() -> EyreResult<()> {
@@ -85,6 +87,9 @@ fn main() -> EyreResult<()> {
 
             // Start prometheus
             let prometheus = tokio::spawn(prometheus::main(options.prometheus, shutdown.clone()));
+
+            // Start slack notifier
+            spawn_or_abort(slack::main(options.slack));
 
             // Start main
             let server = spawn_or_abort({
