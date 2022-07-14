@@ -941,6 +941,41 @@ dependencies = [
 ]
 
 [[package]]
+name = "detris-watcher"
+version = "0.1.0"
+dependencies = [
+ "color-eyre",
+ "console-subscriber",
+ "criterion",
+ "ethers",
+ "eyre",
+ "futures",
+ "hyper",
+ "itertools",
+ "mimalloc",
+ "once_cell",
+ "pretty_assertions",
+ "prometheus",
+ "proptest",
+ "serde",
+ "serde_json",
+ "slack-morphism",
+ "slack-morphism-hyper",
+ "slack-morphism-models",
+ "smallvec",
+ "structopt",
+ "thiserror",
+ "time 0.3.7",
+ "tokio",
+ "tracing",
+ "tracing-futures",
+ "tracing-subscriber",
+ "tracing-test",
+ "url",
+ "users",
+]
+
+[[package]]
 name = "dialoguer"
 version = "0.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3116,41 +3151,6 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn",
-]
-
-[[package]]
-name = "rust-service-template"
-version = "0.1.0"
-dependencies = [
- "color-eyre",
- "console-subscriber",
- "criterion",
- "ethers",
- "eyre",
- "futures",
- "hyper",
- "itertools",
- "mimalloc",
- "once_cell",
- "pretty_assertions",
- "prometheus",
- "proptest",
- "serde",
- "serde_json",
- "slack-morphism",
- "slack-morphism-hyper",
- "slack-morphism-models",
- "smallvec",
- "structopt",
- "thiserror",
- "time 0.3.7",
- "tokio",
- "tracing",
- "tracing-futures",
- "tracing-subscriber",
- "tracing-test",
- "url",
- "users",
 ]
 
 [[package]]

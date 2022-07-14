@@ -1,4 +1,10 @@
-#![warn(clippy::all, clippy::pedantic, clippy::cargo, clippy::nursery)]
+#![warn(
+    clippy::all,
+    clippy::pedantic,
+    clippy::cargo,
+    clippy::nursery,
+    unused_extern_crates
+)]
 
 mod cli;
 mod ethereum;
@@ -50,7 +56,7 @@ struct Options {
     #[structopt(flatten)]
     server:         server::Options,
     #[structopt(flatten)]
-    slack:          slack::Options,
+    ethereum:       ethereum::Options,
 }
 
 fn main() -> EyreResult<()> {
@@ -88,7 +94,7 @@ fn main() -> EyreResult<()> {
             let prometheus = tokio::spawn(prometheus::main(options.prometheus, shutdown.clone()));
 
             // Start slack notifier
-            spawn_or_abort(slack::main(options.slack));
+            spawn_or_abort(ethereum::main(options.ethereum));
 
             // Start main
             let server = spawn_or_abort({

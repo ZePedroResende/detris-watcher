@@ -1,4 +1,3 @@
-// use ethers::core::types::{Address, Filter, ValueOrArray, H256, U256};
 use ethers::providers::{Authorization, Provider, Ws};
 use eyre::Result;
 use std::sync::Arc;
