@@ -965,7 +965,7 @@ dependencies = [
  "smallvec",
  "structopt",
  "thiserror",
- "time 0.3.7",
+ "time 0.3.15",
  "tokio",
  "tracing",
  "tracing-futures",
@@ -3942,9 +3942,9 @@ dependencies = [
 
 [[package]]
 name = "time"
-version = "0.3.7"
+version = "0.3.15"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "004cbc98f30fa233c61a38bc77e96a9106e65c88f2d3bef182ae952027e5753d"
+checksum = "d634a985c4d4238ec39cacaed2e7ae552fbd3c476b552c1deac3021b7d7eaf0c"
 dependencies = [
  "itoa 1.0.1",
  "libc",
@@ -3954,9 +3954,9 @@ dependencies = [
 
 [[package]]
 name = "time-macros"
-version = "0.2.3"
+version = "0.2.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "25eb0ca3468fc0acc11828786797f6ef9aa1555e4a211a60d64cc8e4d1be47d6"
+checksum = "42657b1a6f4d817cda8e7a0ace261fe0cc946cf3a80314390b22cc61ae080792"
 
 [[package]]
 name = "tiny-keccak"
@@ -4764,7 +4764,7 @@ dependencies = [
  "hmac",
  "pbkdf2 0.10.1",
  "sha1",
- "time 0.3.7",
+ "time 0.3.15",
  "zstd",
 ]
 
